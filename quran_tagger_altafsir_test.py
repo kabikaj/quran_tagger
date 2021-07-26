@@ -4,9 +4,9 @@
 #
 # manual tester for quran tagger against altafsir data
 #
-# usage:
-#   $ cat tiny_example_altafsir.json | python quran_tagger_altafsir_test.py --debug --gold tiny_example_altafsir.gold &> tiny_example_altafsir.tagged
-#   $ cat altafsir-9-85-47-4-6.json | python quran_tagger_altafsir_test.py --gold altafsir-9-85-47-4-6.gold > altafsir-9-85-47-4-6.tagged
+# examples:
+#   $ time cat tiny_example_altafsir.json | python quran_tagger_altafsir_test.py --debug --gold tiny_example_altafsir.gold &> tiny_example_altafsir.tagged
+#   $ time cat altafsir-9-85-47-4-6.json | python quran_tagger_altafsir_test.py --gold altafsir-9-85-47-4-6.gold > altafsir-9-85-47-4-6.tagged
 # 
 #####################################################################################################################################################
 
