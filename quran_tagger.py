@@ -113,7 +113,7 @@ CLEAN_RASM_REGEX = re.compile(f'[^{GRAPHEMES}]')
 QNY_RASM_REGEX = re.compile('|'.join(QNY_RASM_MAPPING))
 ARDW_RASM_REGEX = re.compile(r'([ARDW])(?!$)')
 
-EXPAND_REGEX = re.compile(rf'([{GRAPHEMES}])(?=[^{GRAPHEMES}])')
+#EXPAND_REGEX = re.compile(rf'([{GRAPHEMES}])(?=[^{GRAPHEMES}])') #FIXME
 
 class BlocksError(Exception):
     pass
@@ -146,27 +146,39 @@ def rasm(s):
     qny_rasm = QNY_RASM_REGEX.sub(lambda m: QNY_RASM_MAPPING[m.group(0)], pre_rasm)
     return ARDW_RASM_REGEX.sub(r'\1 ', qny_rasm)
 
-def equal(textA, textB):
+def equal(textA, textB, debug=False):
     """ check if Arabic-scripted textA and textB should be considered the same.
 
     Args:
         textA (str): first text to compare.
         textB (str): second text to compare.
+        debug (bool): show debugging info.
 
     Return:
         bool: True if both takes are considered the same, False otherwise.
 
     """
-    textA = EXPAND_REGEX.sub(rf'\1[{VOWELS}]*', textA)
-    return re.match(textA, textB)
+    textA = re.sub('^[{VOWELS}]+', '', textA)
+    textA = re.sub('[{VOWELS}]+$', '', textA)
+    textB = re.sub('^[{VOWELS}]+', '', textB)
+    textB = re.sub('[{VOWELS}]+$', '', textB)
 
-def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json'), debug=False):
+    #textA = EXPAND_REGEX.sub(rf'\1[{VOWELS}]*', textA) #FIXME
+    textA_expanded = re.sub('(.)(?!^)', rf'\1[{VOWELS}]*', textA) #DEBUG
+
+    if debug:
+        print(f'@DEBUG@  textA_expanded="{textA_expanded}"  textB="{textB}"', file=sys.stderr) #TRACE
+
+    return True if re.match(textA_expanded, textB) else False
+
+def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json'), rasm_match=False, debug=False):
     """ tag words with quranic quotations.
 
     Args:
         words (list): text as a list of words.
         min_blocks (int): minimum number of blocks to accept as match.
         quranfp (str): path to quranic struct.
+        rasm (bool): accept pure rasm matches.
         debug (bool): show debugging info.
 
     Yield:
@@ -239,7 +251,10 @@ def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(
                 print(f'\n@DEBUG@ ini={text_ini}  end={text_end}  ori="{text_ori}"  norm="{text_norm}"', file=sys.stderr) #TRACE
                 print(f'@DEBUG@qini={quran_irange[0]}  qend{quran_irange[-1]} range={quran_irange} qori="{quran_ori}" qnorm="{quran_norm}"', file=sys.stderr) #TRACE
 
-            if equal(text_norm, quran_norm):
+            if rasm_match:
+                yield (text_ini, text_end), (quran_irange[0], quran_irange[-1])
+
+            elif equal(text_norm, quran_norm, debug=debug):
                 yield (text_ini, text_end), (quran_irange[0], quran_irange[-1])
 
 
@@ -249,11 +264,12 @@ if __name__ == '__main__':
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='tokenised words to tag in json format')
     parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout, help='quranic indexes found')
     parser.add_argument('--min', type=int, default=MIN_BLOCKS, help='minimum number of blocks to accept as a match (at least 2)')
+    parser.add_argument('--rasm', action='store_true', help='accept pure rasm matches')
     parser.add_argument('--debug', action='store_true', help='debug mode')
     args = parser.parse_args()
 
     words = json.load(args.infile)
 
-    for (ini_word, end_word), (ini_quran, end_quran) in tagger(words, min_blocks=args.min):
+    for (ini_word, end_word), (ini_quran, end_quran) in tagger(words, min_blocks=args.min, rasm_match=args.rasm, debug=args.debug):
         print(f'Found! ini_word={ini_word} end_word={end_word} ini_quran={ini_quran} end_quran={end_quran}', file=args.outfile)
 
