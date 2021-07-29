@@ -9,6 +9,14 @@
 # The Quran tagger uses the tanzil Quran and it uses an archigraphemic representation of letterblocks for Arabic script
 # These two concepts have been develoed by Thomas Milo
 #
+# TODO
+#   * use words instead of blocks
+#   * have to equals with a flag; one stripping the vowels
+#   * add peter to acknowledges
+#   * remove the innecesary loops from the test script
+#   * add proper python tests
+#   * load quran json from outside the function
+#
 # requirements:
 #   * depends on quran.json
 #
