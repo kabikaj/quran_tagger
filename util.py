@@ -164,7 +164,7 @@ def prepare_quran(pre_quran):
             "qword" : {"1": {"1": {"1": ("بِسْمِ", "بِسمِ"), "2": ("ٱللَّهِ", "للَهِ"), ...}, ...}, ...}
 
     """
-    qtext, qrasm, qword, i = [], {}, {}, 0
+    qtext, qrasm, qword, i = [], {}, {}, -1
 
     for sura in pre_quran:
         isura = int(sura['sura'])
