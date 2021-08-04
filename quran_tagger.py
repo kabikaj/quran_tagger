@@ -4,18 +4,17 @@
 #
 # tag quranic quotes in text
 #
-# Author: Alicia Gonzalez Martinez, InterSaME project, Hamburg University
+# Authors:
+#   Alicia Gonzalez Martinez, InterSaME project, Hamburg University
+#   Peter Verkinderen
 #
 # The Quran tagger uses the tanzil Quran and it uses an archigraphemic representation of letterblocks for Arabic script
 # These two concepts have been develoed by Thomas Milo
 #
 # TODO
-#   * use words instead of blocks
 #   * have to equals with a flag; one stripping the vowels
 #   * add peter to acknowledges
 #   * remove the innecesary loops from the test script
-#   * add proper python tests
-#   * load quran json from outside the function
 #
 # requirements:
 #   * depends on quran.json
@@ -36,156 +35,30 @@ import sys
 import ujson as json
 from argparse import ArgumentParser, FileType
 
+from util import normalise, rasm, equal
+
+QURAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json')
+
+with open(QURAN_PATH) as quranfp:
+    QURAN = json.load(quranfp)
+
+QURAN['qrasm'] = {k : set(d) for k, d in QURAN['qrasm'].items()}
+
 MIN_BLOCKS = 5
 
-NORM_MAPPING = {
-    'ࣱ' : 'ٌ',
-    'ُُ' : 'ٌ',
-    'ࣰ' : 'ً',
-    'ََ' : 'ً',
-    'ࣲ' : 'ٍ',
-    'ِِ' : 'ٍ',
-    'ة' : 'ه',
-    'ہ' : 'ه',
-    'ھ' : 'ه',
-    'ﻫ' : 'ه',
-    #'إ' : 'ا',
-    #'أ' : 'ا',
-    #'آ' : 'ا',
-    #'ٱ' : 'ا',
-    'ؤ' : 'و',
-    'ٮ' : 'ی',
-    'ى' : 'ی',
-    'ي' : 'ی',
-    'ئ' : 'ی',
-    'ﺑ' : 'ب',
-    'ﮐ' : 'ک',
-    'ك' : 'ک',
-    'ﻟ' : 'ل',
-    'ں' : 'ن',
-}
+class TokensError(Exception):
+    """ Raised when the number of tokens is illogical.
 
-RASM_MAPPING = {
-    #'ا'  : 'A',
-    'ر'  : 'R',
-    'ز'  : 'R',
-    'ژ'  : 'R',
-    'د'  : 'D',
-    'ذ'  : 'D',
-    'ڈ'  : 'D',
-    'و'  : 'W',
-    'ب'  : 'B',
-    'ک'  : 'K',
-    'ل'  : 'L',
-    'ت'  : 'B',
-    'ث'  : 'B',
-    'پ'  : 'B',
-    'ج'  : 'G',
-    'ح'  : 'G',
-    'خ'  : 'G',
-    'ځ'  : 'G',
-    'چ'  : 'G',
-    'س'  : 'S',
-    'ش'  : 'S',
-    'ص'  : 'C',
-    'ض'  : 'C',
-    'ط'  : 'T',
-    'ظ'  : 'T',
-    'ع'  : 'E',
-    'غ'  : 'E',
-    'ڡ'  : 'F',
-    'ف'  : 'F',
-    'گ'  : 'K',
-    'م'  : 'M',
-    'ه'  : 'H',
-
-}
-
-QNY_RASM_MAPPING = {
-    'ق$' : 'Q',
-    'ن$' : 'N',
-    'ی$' : 'Y',
-    'ق'  : 'F',
-    'ن'  : 'B',
-    'ی'  : 'B',
-}
-
-GRAPHEMES = f'{"".join(RASM_MAPPING.keys())}قنی'
-VOWELS = 'ًٌٍَُِ'
-
-NORM_REGEX = re.compile('|'.join(NORM_MAPPING))
-CLEAN_NORM_REGEX = re.compile(f'[^{GRAPHEMES}{VOWELS} ]')
-
-RASM_REGEX = re.compile('|'.join(RASM_MAPPING))
-CLEAN_RASM_REGEX = re.compile(f'[^{GRAPHEMES}]')
-QNY_RASM_REGEX = re.compile('|'.join(QNY_RASM_MAPPING))
-ARDW_RASM_REGEX = re.compile(r'([ARDW])(?!$)')
-
-#EXPAND_REGEX = re.compile(rf'([{GRAPHEMES}])(?=[^{GRAPHEMES}])') #FIXME
-
-class BlocksError(Exception):
+    """
     pass
 
-def normalise(s):
-    """ normalise Arabic script.
-
-    Args:
-        s (str): Arabic-scripted text to normalise.
-
-    Return:
-        str: normalised text.
-
-    """
-    norm_s = NORM_REGEX.sub(lambda m: NORM_MAPPING[m.group(0)], s)
-    return CLEAN_NORM_REGEX.sub('', norm_s)
-
-def rasm(s):
-    """ convert s to archigraphemic representation.
-
-    Args:
-        s (str): text to rasmise.
-
-    Return:
-        s: rasmised text.
-
-    """
-    clean_rasm = CLEAN_RASM_REGEX.sub('', s)
-    pre_rasm = RASM_REGEX.sub(lambda m: RASM_MAPPING[m.group(0)], clean_rasm)
-    qny_rasm = QNY_RASM_REGEX.sub(lambda m: QNY_RASM_MAPPING[m.group(0)], pre_rasm)
-    return ARDW_RASM_REGEX.sub(r'\1 ', qny_rasm)
-
-def equal(textA, textB, debug=False):
-    """ check if Arabic-scripted textA and textB should be considered the same.
-
-    Args:
-        textA (str): first text to compare.
-        textB (str): second text to compare.
-        debug (bool): show debugging info.
-
-    Return:
-        bool: True if both takes are considered the same, False otherwise.
-
-    """
-    textA = re.sub('^[{VOWELS}]+', '', textA)
-    textA = re.sub('[{VOWELS}]+$', '', textA)
-    textB = re.sub('^[{VOWELS}]+', '', textB)
-    textB = re.sub('[{VOWELS}]+$', '', textB)
-
-    #textA = EXPAND_REGEX.sub(rf'\1[{VOWELS}]*', textA) #FIXME
-    textA_expanded = re.sub('(.)(?!^)', rf'\1[{VOWELS}]*', textA) #DEBUG
-
-    if debug:
-        print(f'@DEBUG@  textA_expanded="{textA_expanded}"  textB="{textB}"', file=sys.stderr) #TRACE
-
-    return True if re.match(textA_expanded, textB) else False
-
-def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json'), rasm_match=False, debug=False):
+def tagger(words, qstruct=QURAN, min_blocks=MIN_BLOCKS, rasm_match=False, debug=False):
     """ tag words with quranic quotations.
 
     Args:
         words (list): text as a list of words.
+        qstruct (dict): quran structure.
         min_blocks (int): minimum number of blocks to accept as match.
-        quranfp (str): path to quranic struct.
         rasm (bool): accept pure rasm matches.
         debug (bool): show debugging info.
 
@@ -193,29 +66,32 @@ def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(
         int, int, int, int: index to initial word, index to final word, starting quran index, end quran index.
 
     Exception:
-        BlocksError: if number of blocks is smaller than 2.
+        TokensError: if number of blocks is smaller than 2.
 
     """
     if min_blocks <= 1:
-        raise BlocksError('The minimum number of blocks must be at least 2.')
+        raise TokensError('The minimum number of blocks must be at least 2')
 
-    with open(quranpath) as quranfp:
-        QURAN = json.load(quranfp)
+    #text = [(ori, norm, rasm(norm)) for ori, norm in ((w, normalise(w)) for w in words)] #FIXME
+    words_rasm = [rasm(normalise(w)) for w in words]
+    end_of_chains = dict()
+    nwords = len(words_rasm)
 
-    text_rasm = [(ori, norm, rasm(norm).split()) for ori, norm in ((w, normalise(w)) for w in words)]
-    text_blocks = [(bloc, i) for i, (_, _, blocks) in enumerate(text_rasm) for bloc in blocks]
+    for i, rasm_tok in enumerate(words_rasm):
+        for iquran in qstruct['qrasm'].get(rasm_tok, set()):
 
-    found = []
-    text_size = len(text_blocks)
-
-    for i, (bloc, itext) in enumerate(text_blocks):
-        for iquran in QURAN['qblocks'].get(bloc, []):
-            step, j = 1, i+1 #FIXME python 3.8
-            while j < text_size-1 and iquran+step in QURAN['qblocks'].get(text_blocks[j][0], []):
-                step += 1
+            j = 0
+            while i+j < nwords-1:
                 j += 1
-            if step >= min_blocks:
-                found.append((i, iquran, step))
+                if not words_rasm[i+j] in qstruct['qrasm'] or not iquran+j in qstruct['qrasm'][words_rasm[i+j]]:
+                    break
+            if j >= MIN_BLOCKS:
+                if not i+j in end_of_chains:
+                    end_of_chains[i+j] = {j: [(i, iquran)]}
+                elif not j in end_of_chains[i+j]:
+                    end_of_chains[i+j][j] = [(i, iquran)]
+                else:
+                    end_of_chains[i+j][j].append((i, iquran))
 
     # in case there are several positbilities starting in the same block, take first #FIXME recheck this
     filtered_uniq = {ibloc : (iquran, step) for ibloc, iquran, step in found}
@@ -224,25 +100,25 @@ def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(
     if not filtered_uniq:
         return
 
-    filtered_biggest = [filtered_uniq[0]]
-    last_ending = filtered_biggest[0][0]+filtered_biggest[0][-1]
+    filtered_longest = [filtered_uniq[0]]
+    last_ending = filtered_longest[0][0]+filtered_longest[0][-1]
 
     for i, (ibloc, iquran, step) in enumerate(filtered_uniq[1:], 1):
 
-        # get biggest step and skip succesive smaller ones
+        # get longest step and skip succesive smaller ones
         if not (ibloc-1==filtered_uniq[i-1][0] and iquran-1==filtered_uniq[i-1][1] and step+1==filtered_uniq[i-1][2]):
 
             # do not allow overlaps
             if ibloc < last_ending:
-                if step > filtered_biggest[-1][-1]:
-                    filtered_biggest.pop()
-                    filtered_biggest.append((ibloc, iquran, step))
+                if step > filtered_longest[-1][-1]:
+                    filtered_longest.pop()
+                    filtered_longest.append((ibloc, iquran, step))
             else:
-                filtered_biggest.append((ibloc, iquran, step))
+                filtered_longest.append((ibloc, iquran, step))
 
         last_ending = ibloc+step
 
-    for ibloc, iquran, step in filtered_biggest:
+    for ibloc, iquran, step in filtered_longest:
 
             text_ini = text_blocks[ibloc][1]
             text_end = text_blocks[ibloc+step][1]
@@ -250,10 +126,10 @@ def tagger(words, min_blocks=MIN_BLOCKS, quranpath=os.path.join(os.path.dirname(
             text_ori = ' '.join((x[0] for x in text_rasm[text_ini:text_end]))
             text_norm = ' '.join((x[1] for x in text_rasm[text_ini:text_end]))
 
-            quran_irange = list(dict.fromkeys(tuple(QURAN['qtext'][iq][:-1]) for iq in range(iquran, iquran+step)))
+            quran_irange = list(dict.fromkeys(tuple(qstruct['qtext'][iq][:-1]) for iq in range(iquran, iquran+step)))
             
-            quran_ori = ' '.join(QURAN['qwords'].get(str(iqs), {}).get(str(iqv), {}).get(str(iqw), {})[0] for iqs, iqv, iqw in quran_irange)
-            quran_norm = ' '.join(QURAN['qwords'].get(str(iqs), {}).get(str(iqv), {}).get(str(iqw), {})[1] for iqs, iqv, iqw in quran_irange)
+            quran_ori = ' '.join(qstruct['qwords'].get(str(iqs), {}).get(str(iqv), {}).get(str(iqw), {})[0] for iqs, iqv, iqw in quran_irange)
+            quran_norm = ' '.join(qstruct['qwords'].get(str(iqs), {}).get(str(iqv), {}).get(str(iqw), {})[1] for iqs, iqv, iqw in quran_irange)
 
             if debug:
                 print(f'\n@DEBUG@ ini={text_ini}  end={text_end}  ori="{text_ori}"  norm="{text_norm}"', file=sys.stderr) #TRACE
