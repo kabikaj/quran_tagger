@@ -47,13 +47,16 @@ class TestRasm(unittest.TestCase):
     def test_rasm_1(self):
         self.assertEqual(rasm('بسُرعهٍ'), 'BSREH')
 
-    def test_rasm_2_NQY(self):
-        self.assertEqual(rasm('قَوْق'), 'FWQ')
+    def test_rasm_2_all(self):
+        self.assertEqual(rasm('رزژدذڈوبکلتثپجحخځچسشصضطظعغڡفگمهقنیی'), 'RRRDDDWBKLBBBGGGGGSSCCTTEEFFKMHFBBY')
 
     def test_rasm_3_NQY(self):
-        self.assertEqual(rasm('نُنجِی'), 'BBGY')
+        self.assertEqual(rasm('قَوْق'), 'FWQ')
 
     def test_rasm_4_NQY(self):
+        self.assertEqual(rasm('نُنجِی'), 'BBGY')
+
+    def test_rasm_5_NQY(self):
         self.assertEqual(rasm('العَلَمِینَ'), 'LELMBN')
 
 class TestEqual(unittest.TestCase):
