@@ -164,30 +164,33 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
 
     # output:
     for text_end, starts in sorted(filtered_common.items()):
-        quran_quotes = []  # group all Qur'anic sequences that end at this token in the text:
-        for text_ini, quran_ini in starts:
-
-            quran_end = quran_ini + (text_end - text_ini)
-            
-            qindex_ini = qstruct['qtext'][quran_ini][0]
-            qindex_end = qstruct['qtext'][quran_end][0]
-
-            if rasm_match or equal(text_norm, quran_norm):
-                quran_quotes.append((qindex_ini, qindex_end, quran_ini, quran_end))
-                
-        if quran_quotes:
+        if starts:
+            text_ini = starts[0][0]
+            text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
+            text_norm = ' '.join((x[1] for x in words_rasm[text_ini:text_end+1]))
             if debug:
-                text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
-                text_norm = ' '.join((x[1] for x in words_rasm[text_ini:text_end+1]))
                 print(f'{RED}@DEBUG@ ini={text_ini}  end={text_end}\n        ori="{text_ori}"  norm="{text_norm}"', file=sys.stderr) #TRACE
 
-                for qindex_ini, qindex_end, quran_ini, quran_end in quran_quotes:
-                    quran_ori = ' '.join(w[0] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
-                    quran_norm = ' '.join(w[1] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
-                    print(f'@DEBUG@ qini={quran_ini}  qend={quran_end}\n        qori="{quran_ori}"  qnorm="{quran_norm}"', file=sys.stderr) #TRACE
-                print(f'{RESET}', file=sys.stderr) #TRACE
+            # group all Qur'anic sequences that end at this token in the text:
+            quran_ids = []  
+            for text_ini, quran_ini in sorted(starts, key=lambda x: x[1]):
+                quran_end = quran_ini + (text_end - text_ini)
+                quran_norm = ' '.join(w[1] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
 
-            yield (text_ini, text_end), quran_quotes
+                # last filtering:
+                if rasm_match or equal(text_norm, quran_norm):
+                    qindex_ini = qstruct['qtext'][quran_ini][0]
+                    qindex_end = qstruct['qtext'][quran_end][0]
+                    quran_ids.append((qindex_ini, qindex_end, quran_ini, quran_end))
+
+                    if debug:
+                        quran_ori = ' '.join(w[0] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
+                        print(f'@DEBUG@ qini={quran_ini}  qend={quran_end}\n        qori="{quran_ori}"  qnorm="{quran_norm}"', file=sys.stderr) #TRACE
+        if debug:
+            print(f'{RESET}', file=sys.stderr) #TRACE
+
+        if quran_ids:
+            yield (text_ini, text_end), quran_ids
 
 
 if __name__ == '__main__':
@@ -208,7 +211,7 @@ if __name__ == '__main__':
 ##        for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
 ##            print(">", qindex_ini)
 ##    input("CONTINUE?")
-    results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=1)]
+    results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=False, min_uncommon=1)]
     print(results)
 
 
