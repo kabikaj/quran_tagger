@@ -6,7 +6,7 @@
 #
 # Authors:
 #   Alicia Gonzalez Martinez, InterSaME project, Hamburg University
-#   Peter Verkinderen
+#   Peter Verkinderen, KITAB project, Aga Khan University
 #
 # The Quran tagger uses the tanzil Quran and the concept of archigraphemes develoed by Thomas Milo
 #
