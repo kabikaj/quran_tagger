@@ -67,6 +67,26 @@ class TestEqual(unittest.TestCase):
     def test_equal_2(self):
         self.assertTrue(equal('بسرعه', 'بِسُرعَهٍ'))
 
+    def test_equal_3_alif_wasla(self):
+        self.assertTrue(equal("ا", "ٱ"))
+
+    def test_equal_4_alif_hamza(self):
+        self.assertTrue(equal("ا", "أ"))
+
+    def test_equal_5_alif_hamza_below(self):
+        self.assertTrue(equal("ا", "إ"))
+
+    def test_equal_6_alif_madda(self):
+        self.assertTrue(equal("ا", "آ"))
+
+    def test_equal_7_dagger_alif(self):
+        self.assertTrue(equal("ما", "مٰا"))
+
+    def test_equal_8_sukun(self):
+        self.assertTrue(equal("شيء", "شيْء"))
+
+
+
 
 if __name__ == '__main__':
 
