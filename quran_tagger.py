@@ -127,7 +127,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                         filtered_longest.pop(end, None)
                     else:
                         # what to do if overlapping parts have same length? Currently nothing is done...
-                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, i, prev_start, i+1))
+                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, end, prev_start, prev_end))
 
     for text_end, starts in sorted(filtered_longest.items()):
         text_ini, quran_ini = starts[0]
