@@ -157,14 +157,13 @@ def prepare_quran(pre_quran):
         pre_quran (io.TextIOWrapper): pointer to preprocessed quran.
 
     Return:
-        dict: 3-element structure containing the quran
+        dict: 2-element structure containing the quran:
 
-            "qtext" : [(1,1,1), (1,1,2), (1,1,2), ...]
             "qrasm" : {"BSM": [0, 63, ...], "LLH" : [...], ...},
-            "qword" : {"1": {"1": {"1": ("بِسْمِ", "بِسمِ"), "2": ("ٱللَّهِ", "للَهِ"), ...}, ...}, ...}
+            "qtext" : [((1,1,1), ("بِسْمِ", "بِسمِ")), ((1,1,2), ("ٱللَّهِ", "للَهِ")), ...]
 
     """
-    qtext, qrasm, qword, i = [], {}, {}, -1
+    qrasm, qtext, i = {}, [], -1
 
     for sura in pre_quran:
         isura = int(sura['sura'])
@@ -176,20 +175,10 @@ def prepare_quran(pre_quran):
                 word_norm = normalise(word)
                 word_rasm = rasm(word_norm)
 
-                qtext.append((isura, ivers, iword))
+                qtext.append(((isura, ivers, iword), (word, word_norm)))
                 qrasm[word_rasm] = qrasm.get(word_rasm, [])+[i:=i+1]
-                
-                if isura in qword:
-                    if ivers in qword[isura]:
-                        if iword not in qword[isura][ivers]:
-                            qword[isura][ivers][iword] = (word, word_norm)
-                    else:
-                        qword[isura][ivers] = {iword : (word, word_norm)}
-                else:
-                    qword[isura] = {}
-                    qword[isura][ivers] = {iword : (word, word_norm)}
 
-    return {'qrasm': qrasm, 'qtext': qtext, 'qword': qword}
+    return {'qrasm': qrasm, 'qtext': qtext}
 
 if __name__ == '__main__':
 

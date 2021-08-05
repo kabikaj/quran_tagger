@@ -1,12 +1,18 @@
 #!/usr/bin/env python3
 #
-#    quran_tagger_altafsir_test.py
+#    test_quran_tagger_altafsir.py
 #
 # manual tester for quran tagger against altafsir data
 #
+# get altfsir files for testing:
+#   $ for f in $(find ~/Desktop/development_230320/corpus/sources/altafsir/data/all/final -type f -name "*.json" | sort -R | tail -4) ;
+#     do cp $f altafsir_in ; done
+#
 # examples:
-#   $ time cat tiny_example_altafsir.json | python quran_tagger_altafsir_test.py --debug --gold tiny_example_altafsir.gold &> tiny_example_altafsir.tagged
-#   $ time cat altafsir-9-85-47-4-6.json | python quran_tagger_altafsir_test.py --gold altafsir-9-85-47-4-6.gold > altafsir-9-85-47-4-6.tagged
+#   $ time cat altafsir_in/tiny_example_altafsir.json |
+#     python test_quran_tagger_altafsir.py --min 3 --debug --gold altafsir_out/tiny_example_altafsir.gold.xml &> altafsir_out/tiny_example_altafsir.tagged.xml
+#   $ time cat altafsir_in/altafsir-9-85-47-4-6.json |
+#     python test_quran_tagger_altafsir.py --min 3 --debug --gold altafsir_out/altafsir-9-85-47-4-6.gold.xml &> altafsir_out/altafsir-9-85-47-4-6.tagged.xml
 # 
 #####################################################################################################################################################
 
@@ -14,7 +20,7 @@ import sys
 import ujson as json
 from argparse import ArgumentParser, FileType
 
-from quran_tagger import tagger
+from quran_tagger import tagger, MIN_TOKENS
 
 if __name__ == '__main__':
 
@@ -22,6 +28,8 @@ if __name__ == '__main__':
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='altafsir file')
     parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout, help='tagged text according to quran tagger')
     parser.add_argument('--gold', type=FileType('w'), help='tagged text according to gold standard')
+    parser.add_argument('--min', type=int, default=MIN_TOKENS, help='minimum number of blocks to accept as a match (at least 2)')
+    parser.add_argument('--rasm', action='store_true', help='accept pure rasm matches')
     parser.add_argument('--debug', action='store_true', help='show debugging info')
     args = parser.parse_args()
 
@@ -37,7 +45,7 @@ if __name__ == '__main__':
 
     tok_text = [w for w in doc['text'].split()]
 
-    results = list(tagger(tok_text, debug=args.debug))
+    results = list(tagger(tok_text, min_tokens=args.min, rasm_match=args.rasm, debug=args.debug))
 
     if args.debug:
         print('\n====== results ======', file=args.outfile) #TRACE
@@ -65,3 +73,4 @@ if __name__ == '__main__':
 
     # text with annotations from quran tagger
     print(' '.join(out), file=args.outfile)
+
