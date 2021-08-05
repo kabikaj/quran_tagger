@@ -166,9 +166,9 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
     for text_end, starts in sorted(filtered_common.items()):
         if starts:
             text_ini = starts[0][0]
-            text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
             text_norm = ' '.join((x[1] for x in words_rasm[text_ini:text_end+1]))
             if debug:
+                text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
                 print(f'{RED}@DEBUG@ ini={text_ini}  end={text_end}\n        ori="{text_ori}"  norm="{text_norm}"', file=sys.stderr) #TRACE
 
             # group all Qur'anic sequences that end at this token in the text:
@@ -186,11 +186,11 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                     if debug:
                         quran_ori = ' '.join(w[0] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
                         print(f'@DEBUG@ qini={quran_ini}  qend={quran_end}\n        qori="{quran_ori}"  qnorm="{quran_norm}"', file=sys.stderr) #TRACE
-        if debug:
-            print(f'{RESET}', file=sys.stderr) #TRACE
+            if debug:
+                print(f'{RESET}', file=sys.stderr) #TRACE
 
-        if quran_ids:
-            yield (text_ini, text_end), quran_ids
+            if quran_ids:
+                yield (text_ini, text_end), quran_ids
 
 
 if __name__ == '__main__':
