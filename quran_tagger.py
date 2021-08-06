@@ -67,6 +67,8 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
         min_uncommon (int): minimum number of uncommon words to accept as match. 
         safe_length (int): minimum number of tokens to accept as match without
             taking min_uncommon into account.
+        include_ellipses (bool): take elliptical quotations into account
+            (e.g., "... ilā ākhir al-āya", "... ilā ākhirhā", "... ilā qawlihi ...")
 
     Yields:
         tuple: ((int, int), list): index to initial word in the text, index to final word in the text, list of identified quran sequences:
