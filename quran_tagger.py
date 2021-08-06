@@ -41,6 +41,7 @@ RESET='\033[0m'
 with open(QURAN_PATH) as quranfp:
     QURAN = json.load(quranfp)
 
+
 QURAN['qrasm'] = {k : set(d) for k, d in QURAN['qrasm'].items()}
 
 MIN_TOKENS = 5
@@ -324,11 +325,14 @@ if __name__ == '__main__':
     test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إن الله بكل شكث شكتثش بسم كمسشتكي" # until 3 specified tokens
 ##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إخرها شكث شكتثش"    # until end of sura
 ##    test = "نننننش كصصكككككك شسيبشسيبشسيبشسيبش كنتكنتكتكنتكمنت  كمنتكنمتكمنتكمنت"  # bogus text, no results
+    test = """فقال تعالى إن أول بيت وضع للناس للذي ببكة
+~~مباركا وهدى للعالمين فيه آيات بينات مقام إبراهيم ومن دخله كان آمنا 
+# وقال تعالى"""
 
-    words = re.split(" +", test)
+    words = re.split("[ \r\n~#]+", test)
     print("words:")
     for i, w in enumerate(words):
-        print(i, w)
+        print(i, w, ">", normalise(w), ">", rasm(normalise(w)))
 ##    for (ini, end), quran_ids in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=1):
 ##        print(ini)
 ##        for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
