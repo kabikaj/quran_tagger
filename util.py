@@ -142,7 +142,7 @@ with open("stopwords.json", mode="r", encoding="utf-8") as file:
 
 
 def equal(textA, textB):
-    """ check if Arabic-scripted textA and textB should be considered the same.
+    """ check if Arabic-scripted normalised strings textA and textB should be considered the same.
     TextB if fully vowelled, whereas textA can contain complete, partial or no vowels.
 
     Args:
