@@ -15,6 +15,7 @@
 import re
 import sys
 import ujson as json
+import json as old_json
 from argparse import ArgumentParser, FileType
 
 
@@ -135,6 +136,11 @@ def rasm(s):
     rasm_s = QNY_RASM_REGEX.sub(lambda m: QNY_RASM_MAPPING[m.group(0)], clean_s)
     return RASM_REGEX.sub(lambda m: RASM_MAPPING[m.group(0)], rasm_s)
 
+
+with open("stopwords.json", mode="r", encoding="utf-8") as file:
+    STOP_WORDS = set([rasm(normalise(w)) for w in json.load(file)])
+
+
 def equal(textA, textB):
     """ check if Arabic-scripted textA and textB should be considered the same.
     TextB if fully vowelled, whereas textA can contain complete, partial or no vowels.
@@ -149,6 +155,20 @@ def equal(textA, textB):
     """
     textA_expanded = EXPANDED_REGEX.sub(fr'\1[{VOWELS}]*', textA)
     return True if re.match(textA_expanded, textB) else False
+
+def too_common(toks, min_uncommon=1):
+    """Check if sequence consists of too many common tokens.
+
+    Args:
+        toks (list): list of rasmized tokens
+        min_uncommon (int): minimum number of uncommon tokens in the string
+            to be considered uncommon
+
+    Returns:
+        bool : True if sequence contains at fewer than `min_uncommon` uncommmon tokens
+    """
+    common = [t in STOP_WORDS for t in toks]
+    return common.count(False) < min_uncommon
 
 def prepare_quran(pre_quran):
     """ prepare preprocessed tanzil quran for the quran tagger.
@@ -181,6 +201,12 @@ def prepare_quran(pre_quran):
     return {'qrasm': qrasm, 'qtext': qtext}
 
 if __name__ == '__main__':
+    fp = "../quran-tag/resources/quranAnalysis_frequent_phrases.tsv"
+    with open(fp, mode="r", encoding="utf-8") as file:
+        data = [x.split("\t")[0] for x in file.readlines()]
+        tok_data = [[rasm(normalise(tok)) for tok in t.split(" ")] for t in data[1:]]
+    for i, t in enumerate(tok_data):
+        print(too_common(t, 1), data[i+1])
 
     parser = ArgumentParser(description='prepare tanzil quran for tagger')
     parser.add_argument('--prepare_quran', action='store_true', required=True, help='create the quran struct')

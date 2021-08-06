@@ -6,7 +6,7 @@
 #
 # Authors:
 #   Alicia Gonzalez Martinez, InterSaME project, Hamburg University
-#   Peter Verkinderen
+#   Peter Verkinderen, KITAB project, Aga Khan University
 #
 # The Quran tagger uses the tanzil Quran and the concept of archigraphemes develoed by Thomas Milo
 #
@@ -30,7 +30,7 @@ import ujson as json
 from argparse import ArgumentParser, FileType
 from pprint import pprint #DEBUG
 
-from util import normalise, rasm, equal
+from util import normalise, rasm, equal, too_common
 
 QURAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json')
 
@@ -50,18 +50,29 @@ class TokensError(Exception):
     """
     pass
 
-def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=False):
+def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=False,
+           min_uncommon=0, safe_length=4):
     """ tag words with quranic quotations.
 
     Args:
         words (list): text as a list of words.
         qstruct (dict): quran structure.
-        min_tokens (int): minimum number of blocks to accept as match.
+        min_tokens (int): minimum number of tokens to accept as match.
         rasm (bool): accept pure rasm matches.
         debug (bool): show debugging info.
+        min_uncommon (int): minimum number of uncommon words to accept as match. 
+        safe_length (int): minimum number of tokens to accept as match without
+            taking min_uncommon into account.
 
-    Yield:
-        int, int, int, int: index to initial word, index to final word, starting quran index, end quran index.
+    Yields:
+        tuple: ((int, int), list): index to initial word in the text, index to final word in the text, list of identified quran sequences:
+                [ (qindex_ini, qindex_end, quran_ini, quran_end), ...]
+                - qindex_ini and qindex_end are lists: [sura_number (int), aya_number (int), word_in_aya_index (int)]
+                - quran_ini (int) and quran_end (int) are token offsets of the start and end of the quotation in the Quran
+                NB: to access the results:
+                for (text_ini, text_end), quran_ids in tagger(words): 
+                    for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
+                        for sura_no, aya_no, token_no in qindex_ini: ...
 
     Exception:
         TokensError: if number of blocks is smaller than 2.
@@ -87,14 +98,16 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                 if not words_rasm[i+j][2] in qstruct['qrasm'] or not iquran+j in qstruct['qrasm'][words_rasm[i+j][2]]:
                     break
             #print(f'{RED}PREEEEE i={i}  j={j}  min_tokens={min_tokens}  i+j={i+j}  iquran={iquran}{RESET}', file=sys.stderr) #DEBUG
-            if j >= min_tokens-1:
-                #print(f'{RED}<<>> i={i}  j={j}  min_tokens={min_tokens}  i+j={i+j}  iquran={iquran}{RESET}', file=sys.stderr) #DEBUG
+            if j >= min_tokens:
+                j -= 1  # j = number of tokens in chain, i + j - 1 is the index position of the last token in the chain!
+                #print(f'{RED}<<>> i={i}  j={j}  min_tokens={min_tokens}  i+j={i+j}  iquran={iquran} {words_rasm[i+j-1][2]}{RESET}', file=sys.stderr) #DEBUG
                 if not i+j in end_of_chains:
                     end_of_chains[i+j] = {j: [(i, iquran)]}
                 elif not j in end_of_chains[i+j]:
                     end_of_chains[i+j][j] = [(i, iquran)]
                 else:
                     end_of_chains[i+j][j].append((i, iquran))
+                #print(i+j, [k for k in end_of_chains[i+j].keys()])
 
     #print(f'{RED}end_of_chains', end='    = ', file=sys.stderr) #DEBUG
     #pprint(end_of_chains, stream=sys.stderr) #DEBUG
@@ -127,35 +140,80 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                         filtered_longest.pop(end, None)
                     else:
                         # what to do if overlapping parts have same length? Currently nothing is done...
-                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, i, prev_start, i+1))
+                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, end, prev_start, prev_end))
 
-    for text_end, starts in sorted(filtered_longest.items()):
-        text_ini, quran_ini = starts[0]
-        quran_end = quran_ini + (text_end - text_ini)
+    # filter out short sequences that consist (almost) entirely of common tokens
+    # if the sequence is shorter than a specified `safe_length`:
+    if min_uncommon:
+        filtered_common = dict()
+        for text_end, starts in sorted(filtered_longest.items()):
+            if starts:
+                text_ini = starts[0][0]
+                if 1 + text_end - text_ini >= safe_length:
+                    filtered_common[text_end] = starts
+                else:
+                    rasm_toks = (x[2] for x in words_rasm[text_ini:text_end+1])
+                    if too_common(rasm_toks, min_uncommon):
+                        if debug:
+                            text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
+                            print(f'{RED}@DEBUG@ "{text_ori}" discarded because it is too common {RESET}', file=sys.stderr)
+                    else:
+                        filtered_common[text_end] = starts
+    else:
+        filtered_common = filtered_longest
 
-        text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
-        text_norm = ' '.join((x[1] for x in words_rasm[text_ini:text_end+1]))
-
-        qindex_ini = qstruct['qtext'][quran_ini][0]
-        qindex_end = qstruct['qtext'][quran_end][0]
-
-        quran_ori = ' '.join(w[0] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
-        quran_norm = ' '.join(w[1] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
-
-        if rasm_match:
+    # output:
+    for text_end, starts in sorted(filtered_common.items()):
+        if starts:
+            text_ini = starts[0][0]
+            text_norm = ' '.join((x[1] for x in words_rasm[text_ini:text_end+1]))
             if debug:
+                text_ori = ' '.join((x[0] for x in words_rasm[text_ini:text_end+1]))
                 print(f'{RED}@DEBUG@ ini={text_ini}  end={text_end}\n        ori="{text_ori}"  norm="{text_norm}"', file=sys.stderr) #TRACE
-                print(f'@DEBUG@ qini={quran_ini}  qend={quran_end}\n        qori="{quran_ori}"  qnorm="{quran_norm}"{RESET}', file=sys.stderr) #TRACE
-            yield (text_ini, text_end), (qindex_ini, qindex_end)
 
-        elif equal(text_norm, quran_norm):
+            # group all Qur'anic sequences that end at this token in the text:
+            quran_ids = []  
+            for text_ini, quran_ini in sorted(starts, key=lambda x: x[1]):
+                quran_end = quran_ini + (text_end - text_ini)
+                quran_norm = ' '.join(w[1] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
+
+                # last filtering:
+                if rasm_match or equal(text_norm, quran_norm):
+                    qindex_ini = qstruct['qtext'][quran_ini][0]
+                    qindex_end = qstruct['qtext'][quran_end][0]
+                    quran_ids.append((qindex_ini, qindex_end, quran_ini, quran_end))
+
+                    if debug:
+                        quran_ori = ' '.join(w[0] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
+                        print(f'@DEBUG@ qini={quran_ini}  qend={quran_end}\n        qori="{quran_ori}"  qnorm="{quran_norm}"', file=sys.stderr) #TRACE
             if debug:
-                print(f'{RED}@DEBUG@ ini={text_ini}  end={text_end}\n        ori="{text_ori}"  norm="{text_norm}"', file=sys.stderr) #TRACE
-                print(f'@DEBUG@ qini={quran_ini}  qend={quran_end}\n        qori="{quran_ori}"  qnorm="{quran_norm}"{RESET}', file=sys.stderr) #TRACE
-            yield (text_ini, text_end), (qindex_ini, qindex_end)
+                print(f'{RESET}', file=sys.stderr) #TRACE
+
+            if quran_ids:
+                yield (text_ini, text_end), quran_ids
 
 
 if __name__ == '__main__':
+
+##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم شكث شكتثش"              # no ellipsis
+##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى مستقيما شكث شكتثش"  # until 1 specified token
+    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إن الله بكل شكث شكتثش" # until 3 specified tokens
+##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إخرها شكث شكتثش"    # until end of sura
+##    test =
+##    test = "نننننش كصصكككككك شسيبشسيبشسيبشسيبش كنتكنتكتكنتكمنت  كمنتكنمتكمنتكمنت"  # bogus text, no results
+
+    words = re.split(" +", test)
+    print("words:")
+    for i, w in enumerate(words):
+        print(i, w)
+##    for (ini, end), quran_ids in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=1):
+##        print(ini)
+##        for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
+##            print(">", qindex_ini)
+##    input("CONTINUE?")
+    results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=False, min_uncommon=1)]
+    print(results)
+
 
     parser = ArgumentParser(description='tag text with Quranic quotations')
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='tokenised words to tag in json format')

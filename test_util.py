@@ -47,13 +47,16 @@ class TestRasm(unittest.TestCase):
     def test_rasm_1(self):
         self.assertEqual(rasm('بسُرعهٍ'), 'BSREH')
 
-    def test_rasm_2_NQY(self):
-        self.assertEqual(rasm('قَوْق'), 'FWQ')
+    def test_rasm_2_all(self):
+        self.assertEqual(rasm('رزژدذڈوبکلتثپجحخځچسشصضطظعغڡفگمهقنیی'), 'RRRDDDWBKLBBBGGGGGSSCCTTEEFFKMHFBBY')
 
     def test_rasm_3_NQY(self):
-        self.assertEqual(rasm('نُنجِی'), 'BBGY')
+        self.assertEqual(rasm('قَوْق'), 'FWQ')
 
     def test_rasm_4_NQY(self):
+        self.assertEqual(rasm('نُنجِی'), 'BBGY')
+
+    def test_rasm_5_NQY(self):
         self.assertEqual(rasm('العَلَمِینَ'), 'LELMBN')
 
 class TestEqual(unittest.TestCase):
@@ -63,6 +66,26 @@ class TestEqual(unittest.TestCase):
 
     def test_equal_2(self):
         self.assertTrue(equal('بسرعه', 'بِسُرعَهٍ'))
+
+    def test_equal_3_alif_wasla(self):
+        self.assertTrue(equal("ا", "ٱ"))
+
+    def test_equal_4_alif_hamza(self):
+        self.assertTrue(equal("ا", "أ"))
+
+    def test_equal_5_alif_hamza_below(self):
+        self.assertTrue(equal("ا", "إ"))
+
+    def test_equal_6_alif_madda(self):
+        self.assertTrue(equal("ا", "آ"))
+
+    def test_equal_7_dagger_alif(self):
+        self.assertTrue(equal("ما", "مٰا"))
+
+    def test_equal_8_sukun(self):
+        self.assertTrue(equal("شيء", "شيْء"))
+
+
 
 
 if __name__ == '__main__':
