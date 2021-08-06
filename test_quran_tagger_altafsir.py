@@ -47,30 +47,25 @@ if __name__ == '__main__':
 
     results = list(tagger(tok_text, min_tokens=args.min, rasm_match=args.rasm, debug=args.debug))
 
+    results_proc = [(tinds, '; '.join(f'ini={":".join(map(str,qiini))} end={":".join(map(str,qiend))}' for qiini, qiend, *_ in qinds))
+        for tinds, qinds in results]
+
     if args.debug:
         print('\n====== results ======', file=args.outfile) #TRACE
-        for res in results: print(res, file=args.outfile) #TRACE
+        for res in results_proc:
+            print(res, file=args.outfile) #TRACE
 
-    out = []
-    for i, tok in enumerate(tok_text):
-        found = False
-        for (ini, end), (qini, qend) in results:
-            sura_ini, vers_ini, word_ini = qini
-            sura_end, vers_end, word_end = qend
-            if i == ini:
-                out.append(f'\n<quran ini="{sura_ini},{vers_ini},{word_ini}" end="{sura_end},{vers_end},{word_end}">\n'+tok)
-                found = True
-                break
-            if i == end:
-                out.append(f'\n</quran>\n'+tok)
-                found = True
-                break
-        if not found:
-            out.append(tok)
+    opening_tags = {ini:attrib for (ini, _), attrib in results_proc}
+    closing_tags = {end for (_, end), _ in results_proc}
 
     if args.debug:
         print('\n====== tagged tok_text ======', file=args.outfile) #TRACE
 
-    # text with annotations from quran tagger
-    print(' '.join(out), file=args.outfile)
+    for i, tok in enumerate(tok_text):
+        if i in opening_tags:
+            print(f'\n<quran {opening_tags[i]}>\n{tok} ', end='', file=args.outfile)
+        elif i in closing_tags:
+            print(f'{tok}\n</quran>\n', end='', file=args.outfile)
+        else:
+            print(tok, end=' ', file=args.outfile)
 
