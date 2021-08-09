@@ -36,7 +36,7 @@ import ujson as json
 from argparse import ArgumentParser, FileType
 from pprint import pprint #DEBUG
 
-from util import normalise, rasm, equal, too_common
+from util import normalise, rasm, too_common
 
 QURAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json')
 
@@ -75,6 +75,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                 [ (qindex_ini, qindex_end, quran_ini, quran_end), ...]
                 - qindex_ini and qindex_end are lists: [sura_number (int), aya_number (int), word_in_aya_index (int)]
                 - quran_ini (int) and quran_end (int) are token offsets of the start and end of the quotation in the Quran
+
                 NB: to access the results:
                 for (text_ini, text_end), quran_ids in tagger(words): 
                     for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
@@ -111,7 +112,6 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                     end_of_chains[i+j][j] = [(i, iquran)]
                 else:
                     end_of_chains[i+j][j].append((i, iquran))
-                #print(i+j, [k for k in end_of_chains[i+j].keys()]) #DEBUG
 
     # keep only the longest token chain(s) for each endpoint:
     filtered_longest = dict()
@@ -136,9 +136,9 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                         filtered_longest.pop(end, None)
                     else:
                         # what to do if overlapping parts have same length? Currently nothing is done...
-                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, end, prev_start, prev_end))
+                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, end, prev_start, prev_end), file=sys.stderr)
 
-    # filter out short sequences that consist (almost) entirely of common tokens
+    ## filter out short sequences that consist (almost) entirely of common tokens
     # if the sequence is shorter than a specified `safe_length`:
     if min_uncommon:
         filtered_common = dict()
@@ -160,6 +160,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
 
     # output:
     for text_end, starts in sorted(filtered_common.items()):
+    #for text_end, starts in sorted(filtered_longest.items()):
         if starts:
             text_ini = starts[0][0]
             text_norm = ' '.join((x[1] for x in words_rasm[text_ini:text_end+1]))
@@ -174,7 +175,8 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                 quran_norm = ' '.join(w[1] for _, w in qstruct['qtext'][quran_ini:quran_end+1])
 
                 # last filtering:
-                if rasm_match or equal(text_norm, quran_norm):
+                #if rasm_match or equal(text_norm, quran_norm): #FIXME deprecated
+                if rasm_match or text_norm == quran_norm:
                     qindex_ini = qstruct['qtext'][quran_ini][0]
                     qindex_end = qstruct['qtext'][quran_end][0]
                     quran_ids.append((qindex_ini, qindex_end, quran_ini, quran_end))
@@ -190,6 +192,26 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
 
 
 if __name__ == '__main__':
+
+    #FIXME
+    #test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم شكث شكتثش"              # no ellipsis
+    #test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى مستقيما شكث شكتثش"  # until 1 specified token
+    ##test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إن الله بكل شكث شكتثش" # until 3 specified tokens
+    #test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إخرها شكث شكتثش"    # until end of sura
+    #test =
+    #test = "نننننش كصصكككككك شسيبشسيبشسيبشسيبش كنتكنتكتكنتكمنت  كمنتكنمتكمنتكمنت"  # bogus text, no results
+
+    #words = re.split(" +", test)
+    #print("words:")
+    #for i, w in enumerate(words):
+    #    print(i, w)
+    ##for (ini, end), quran_ids in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=1):
+    ##    print(ini)
+    ##    for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
+    ##        print(">", qindex_ini)
+    ##input("CONTINUE?")
+    #results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=False, min_uncommon=1)]
+    #print(results)
 
     parser = ArgumentParser(description='tag text with Quranic quotations')
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='tokenised words to tag in json format')
