@@ -2,3 +2,4 @@ __pycache__/
 wip/
 *.gold.xml
 *.tagged.xml
+altafsir_in/*.json
