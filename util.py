@@ -17,6 +17,7 @@ import sys
 import ujson as json
 import json as old_json
 from argparse import ArgumentParser, FileType
+import textwrap
 
 
 NORM_MAPPING = {
@@ -199,6 +200,77 @@ def prepare_quran(pre_quran):
                 qrasm[word_rasm] = qrasm.get(word_rasm, [])+[i:=i+1]
 
     return {'qrasm': qrasm, 'qtext': qtext}
+
+
+ILA = rasm(normalise("إلى"))
+QAWL = rasm(normalise("قوله"))
+TACALA = rasm(normalise("تعالى"))
+AKHIR = rasm(normalise("آخر"))
+AKHIRHA = rasm(normalise("آخرها"))
+SURA = rasm(normalise("سورة"))
+AYA = rasm(normalise("آية"))
+
+def check_ellipsis(words_rasm, i):
+    """Check whether the Quran quotation is an elliptical quotation
+    (that is, if it is not quoted fully but abbreviated by quoting
+    only the start and end of the intended quotation).
+    
+    Examples:
+        - قرأ رسول الله صلى الله عليه وسلم فأما من أعطى واتقى وصدق بالحسنى *** إلى قوله *** فسنيسره للعسرى
+        - فأنزل الله تعالى تبت يدا أبي لهب وتب *** إلى آخرها 
+        - الآية التي في البقرة قولوا آمنا بالله وما أنزل إلينا *** إلى آخر الآية
+
+    Args:
+        words_rasm (list(tuple)): contains a tuple for each token in the text:
+            (its_raw_form, its_normalized_form, its_rasmised_form)
+        i (int): token index after the end token of the Qur'an quotation in the text
+    """
+    r = False
+    if i < len(words_rasm)-1 and words_rasm[i][2] == ILA and i+1 < len(words_rasm)-1:
+        r = "ila"
+        if words_rasm[i+1][2].startswith(QAWL):
+            r += " qawl"
+            if i+2 < len(words_rasm)-1 and words_rasm[i+2][2] == TACALA:
+                r += " tacala"
+        elif words_rasm[i+1][2] == AKHIRHA:
+            r += " akhirha"
+        elif words_rasm[i+1][2] == AKHIR:
+            r += " akhir"
+            if i+2 < len(words_rasm)-1 and words_rasm[i+2][2] == SURA:
+                r += " sura"
+            elif i+2 < len(words_rasm)-1 and words_rasm[i+2][2] == AYA:
+                r += " aya"
+    return r
+
+def last_token_of_sura_or_aya(qtext, start, n, n_type):
+    """Find the end of a sura or verse.
+
+    Args:
+        qtext (list): list that contains for every token in the Quran
+            two tuples: ((token, normalized_token), (sura_no, aya_no, word_no))
+        start (int): token index of a token in the verse
+        n (int): aya or sura number
+        n_type (str): "aya" or "sura"
+        
+    Returns:
+        int : (zero-based) token index of the last token in the current sura/aya in the Quran
+    """
+    t = {"sura": 0, "aya": 1}[n_type]
+    i = 0
+    end = False
+    while not end and qtext[start+i][0][t] == n:
+        i += 1
+        if start + i == len(qtext):
+            end = True
+    return start + i - 1
+
+def shorten(s, width=50, placeholder=' [...] '):
+    """Shorten a long string to width, keeping text at the beginning and the end."""
+    start = textwrap.shorten(s, width=int(width-len(placeholder)/2), placeholder="")
+    end = textwrap.shorten(s[::-1], width=int(width-len(placeholder)/2), placeholder="")[::-1]
+    return f'        {start}{placeholder}{end}'
+    
+
 
 if __name__ == '__main__':
     #FIXME
