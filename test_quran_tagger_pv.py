@@ -1,10 +1,7 @@
 #!/usr/bin/env python3
 #
-<<<<<<< HEAD
-#    test_util.py
-=======
+
 #    test_quran_tagger.py
->>>>>>> 26fbb4bbabbace3c468c0fb09ce510470b3bf0c2
 #
 # usage:
 #
@@ -13,7 +10,6 @@
 #     $ python -m unittest test_quran_tagger
 #
 #   apply specific test
-<<<<<<< HEAD
 #     $ python -m unittest quran_tagger.TestTagger
 #
 #################################################################################
@@ -25,21 +21,9 @@ from argparse import ArgumentParser
 import re
 
 from quran_tagger import tagger
-=======
-#     $ python -m unittest test_quran_tagger.TestEqual
-#
-#################################################################################
-
-import unittest
-from argparse import ArgumentParser
-
-from quran_tagger import equal, tagger
->>>>>>> 26fbb4bbabbace3c468c0fb09ce510470b3bf0c2
-
 
 class TestTagger(unittest.TestCase):
 
-<<<<<<< HEAD
     def test_tagger_basmallah(self):
         t = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم شكث شكتثش"
         words = re.split(" +", t)
@@ -193,23 +177,11 @@ class TestTagger(unittest.TestCase):
         results = [m for m in tagger(words, debug=True, min_tokens=3, rasm_match=True, min_uncommon=0)]
         self.assertEqual(exp, results)
 
-    
-=======
-    pass
-
-    #TODO
-    #def test_equal_1(self):
-    #    self.assertTrue(equal('بسُرعهٍ', 'بِسُرعَهٍ'))
->>>>>>> 26fbb4bbabbace3c468c0fb09ce510470b3bf0c2
 
 
 if __name__ == '__main__':
 
-<<<<<<< HEAD
     parser = ArgumentParser(description='apply all tests for quran_tagger')
-=======
-    parser = ArgumentParser(description='apply all tests for tagger')
->>>>>>> 26fbb4bbabbace3c468c0fb09ce510470b3bf0c2
     args = parser.parse_args()
 
     unittest.main()
