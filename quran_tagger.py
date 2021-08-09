@@ -37,7 +37,7 @@ from argparse import ArgumentParser, FileType
 from textwrap import fill
 from pprint import pprint #DEBUG
 
-from util import normalise, rasm, equal, too_common, check_ellipsis, shorten, last_token_of_sura_or_aya
+from util import normalise, rasm, too_common, check_ellipsis, shorten, last_token_of_sura_or_aya
 
 QURAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json')
 
