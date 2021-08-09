@@ -16,7 +16,7 @@
 import unittest
 from argparse import ArgumentParser
 
-from util import normalise, rasm, equal
+from util import normalise, rasm
 
 
 class TestNormalise(unittest.TestCase):

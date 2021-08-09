@@ -96,7 +96,6 @@ GRAPHEMES = "".join(RASM_MAPPING.keys())
 VOWELS = 'ًٌٍَُِ'
 #VOWELS = 'ًࣰٌࣱٍࣲَُِّْۣۭۡٓۜۢ۟۠ۖۗۘۙۚۛ'
 
-CONJ_REGEX = re.compile('^[وف][َُِ]?')
 NORM_REGEX = re.compile('|'.join(NORM_MAPPING))
 CLEAN_REGEX = re.compile(f'[^{GRAPHEMES}]')
 
@@ -119,9 +118,8 @@ def normalise(s, rm_conj=True):
     """
     s = NORM_REGEX.sub(lambda m: NORM_MAPPING[m.group(0)], s)
     s = CLEAN_REGEX.sub('', s)
-    if rm_conj and len(s)>3:
-        s = CONJ_REGEX.sub('', s)
-    s = CLEAN_REGEX.sub('', s)
+    if len(s)>1 and s[0]=='و' or s[0]=='ف':
+        s = s[1:]
     return s.replace('ا', '')
 
 def rasm(s):
