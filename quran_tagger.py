@@ -20,8 +20,14 @@
 # examples:
 #   $ python quran_tagger.py --min 2 <(echo '["نرينك","بعض"]')
 #   $ echo "نرينك بعض" | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py --min 2
+#
+#   $ echo "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم شكث شكتثش" | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py  # no ellipsis
+#   $ echo "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى مستقيما شكث شكتثش" | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py  # until 1 specified token
+#   $ echo "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إن الله بكل شكث شكتثش"  | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py  # until 3 specified tokens
+#   $ echo "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إخرها شكث شكتثش" | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py  # until end of sura
+#   $ echo "نننننش كصصكككككك شسيبشسيبشسيبشسيبش كنتكنتكتكنتكمنت  كمنتكنمتكمنتكمنت" | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py  # bogus text, no results
 # 
-##########################################################################################################################################################
+####################################################################################################################################################################
 
 import os
 import re
@@ -35,8 +41,8 @@ from util import normalise, rasm, equal, too_common, check_ellipsis, shorten, la
 
 QURAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json')
 
-RED='\033[1;31m'
-RESET='\033[0m'
+RED='\033[1;31m' #DEBUG
+RESET='\033[0m' #DEBUG
 
 with open(QURAN_PATH) as quranfp:
     QURAN = json.load(quranfp)
@@ -44,7 +50,7 @@ with open(QURAN_PATH) as quranfp:
 
 QURAN['qrasm'] = {k : set(d) for k, d in QURAN['qrasm'].items()}
 
-MIN_TOKENS = 5
+MIN_TOKENS = 4
 
 
 class TokensError(Exception):
@@ -76,6 +82,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                 [ (qindex_ini, qindex_end, quran_ini, quran_end), ...]
                 - qindex_ini and qindex_end are lists: [sura_number (int), aya_number (int), word_in_aya_index (int)]
                 - quran_ini (int) and quran_end (int) are token offsets of the start and end of the quotation in the Quran
+
                 NB: to access the results:
                 for (text_ini, text_end), quran_ids in tagger(words): 
                     for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
@@ -114,7 +121,6 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
             # store the result:
             if j >= min_tokens:
                 j -= 1  # j = number of tokens in chain, i + j - 1 is the index position of the last token in the chain!
-                #print(f'{RED}<<>> i={i}  j={j}  min_tokens={min_tokens}  i+j={i+j}  iquran={iquran} {words_rasm[i+j-1][2]}{RESET}', file=sys.stderr) #DEBUG
                 if not i+j in end_of_chains:
                     end_of_chains[i+j] = {j: [(i, iquran)]}
                 elif not j in end_of_chains[i+j]:
@@ -122,20 +128,12 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                 else:
                     end_of_chains[i+j][j].append((i, iquran))
 
-    #print(f'{RED}end_of_chains', end='    = ', file=sys.stderr) #DEBUG
-    #pprint(end_of_chains, stream=sys.stderr) #DEBUG
-    #print(f'{RESET}', end='', file=sys.stderr) #DEBUG
-
     # keep only the longest token chain(s) for each endpoint:
     
     filtered_longest = dict()  # { index_end_text : [(index_ini_text, index_ini_quran), ...] }
     for end_i in end_of_chains.keys():
         m = max(end_of_chains[end_i].keys())
         filtered_longest[end_i] = end_of_chains[end_i][m]
-
-    #print(f'{RED}filtered_longest', end=' = ', file=sys.stderr) #DEBUG
-    #pprint(filtered_longest, stream=sys.stderr) #DEBUG
-    #print(f'{RESET}', end='', file=sys.stderr) #DEBUG
 
     # filter out overlapping chains:
     
@@ -155,9 +153,9 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
                         filtered_longest.pop(end, None)
                     else:
                         # what to do if overlapping parts have same length? Currently nothing is done...
-                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, end, prev_start, prev_end))
+                        print("overlap Quran quotations with same length: {}-{} vs {}-{}".format(start, end, prev_start, prev_end), file=sys.stderr)
 
-    # filter out short sequences that consist (almost) entirely of common tokens
+    ## filter out short sequences that consist (almost) entirely of common tokens
     # if the sequence is shorter than a specified `safe_length`:
     
     if min_uncommon:
@@ -178,8 +176,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
     else:
         filtered_common = filtered_longest
 
-    # output:
-    
+    # output:    
     text_ends = sorted(filtered_common.keys())
     for text_end in text_ends:
         if text_end in filtered_common.keys() and filtered_common[text_end]: # may have been filtered out!
@@ -341,7 +338,6 @@ if __name__ == '__main__':
     results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=0)]
     print(results)
 
-
     parser = ArgumentParser(description='tag text with Quranic quotations')
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='tokenised words to tag in json format')
     parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout, help='quranic indexes found')
@@ -352,6 +348,7 @@ if __name__ == '__main__':
 
     words = json.load(args.infile)
 
-    for (ini_word, end_word), (ini_quran, end_quran) in tagger(words, min_tokens=args.min, rasm_match=args.rasm, debug=args.debug):
-        print(f'Found! ini_word={ini_word} end_word={end_word} ini_quran={ini_quran} end_quran={end_quran}', file=args.outfile)
-
+    for (word_ini, word_end), quranids in tagger(words, min_tokens=args.min, rasm_match=args.rasm, debug=args.debug):
+        print(f'Found! word_ini={word_ini} word_end={word_end}', file=args.outfile)
+        for qindex_ini, qindex_end, quran_ini, quran_end in quranids:
+            print(f'quran_ini={qindex_ini}({quran_ini}) quran_end={qindex_end}({quran_end})', file=args.outfile)

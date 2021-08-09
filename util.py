@@ -21,20 +21,20 @@ import textwrap
 
 
 NORM_MAPPING = {
-    'ࣱ' : 'ٌ',
-    'ُُ' : 'ٌ',
-    'ࣰ' : 'ً',
-    'ََ' : 'ً',
-    'ࣲ' : 'ٍ',
-    'ِِ' : 'ٍ',
+    #'ࣱ' : 'ٌ',
+    #'ُُ' : 'ٌ',
+    #'ࣰ' : 'ً',
+    #'ََ' : 'ً',
+    #'ࣲ' : 'ٍ',
+    #'ِِ' : 'ٍ',
     'ة' : 'ه',
     'ہ' : 'ه',
     'ھ' : 'ه',
     'ﻫ' : 'ه',
-    #'إ' : 'ا',
-    #'أ' : 'ا',
-    #'آ' : 'ا',
-    #'ٱ' : 'ا',
+    'إ' : 'ا',
+    'أ' : 'ا',
+    'آ' : 'ا',
+    'ٱ' : 'ا',
     'ؤ' : 'و',
     'ٮ' : 'ی',
     'ى' : 'ی',
@@ -95,16 +95,16 @@ QNY_RASM_MAPPING = {
 
 GRAPHEMES = "".join(RASM_MAPPING.keys())
 VOWELS = 'ًٌٍَُِ'
+#VOWELS = 'ًࣰٌࣱٍࣲَُِّْۣۭۡٓۜۢ۟۠ۖۗۘۙۚۛ'
 
 CONJ_REGEX = re.compile('^[وف][َُِ]?')
 NORM_REGEX = re.compile('|'.join(NORM_MAPPING))
-CLEAN_NORM_REGEX = re.compile(f'[^{GRAPHEMES}{VOWELS}]')
+CLEAN_REGEX = re.compile(f'[^{GRAPHEMES}]')
 
 RASM_REGEX = re.compile('|'.join(RASM_MAPPING))
-CLEAN_RASM_REGEX = re.compile(f'[^{GRAPHEMES}]')
 QNY_RASM_REGEX = re.compile('(%s)(?=$)' % '|'.join(QNY_RASM_MAPPING))
 
-EXPANDED_REGEX = re.compile(fr'([^{VOWELS}])(?![{VOWELS}])')
+#EXPANDED_REGEX = re.compile(fr'([^{VOWELS}])(?![{VOWELS}])')
 
 def normalise(s, rm_conj=True):
     """ normalise Arabic script.
@@ -118,10 +118,12 @@ def normalise(s, rm_conj=True):
         str: normalised text.
 
     """
+    s = NORM_REGEX.sub(lambda m: NORM_MAPPING[m.group(0)], s)
+    s = CLEAN_REGEX.sub('', s)
     if rm_conj and len(s)>3:
         s = CONJ_REGEX.sub('', s)
-    norm_s = NORM_REGEX.sub(lambda m: NORM_MAPPING[m.group(0)], s)
-    return CLEAN_NORM_REGEX.sub('', norm_s)
+    s = CLEAN_REGEX.sub('', s)
+    return s.replace('ا', '')
 
 def rasm(s):
     """ convert s to archigraphemic representation.
@@ -133,29 +135,29 @@ def rasm(s):
         s: rasmised text.
 
     """
-    clean_s = CLEAN_RASM_REGEX.sub('', s)
-    rasm_s = QNY_RASM_REGEX.sub(lambda m: QNY_RASM_MAPPING[m.group(0)], clean_s)
-    return RASM_REGEX.sub(lambda m: RASM_MAPPING[m.group(0)], rasm_s)
+    s = QNY_RASM_REGEX.sub(lambda m: QNY_RASM_MAPPING[m.group(0)], s)
+    return RASM_REGEX.sub(lambda m: RASM_MAPPING[m.group(0)], s)
 
 
+#FIXME
 with open("stopwords.json", mode="r", encoding="utf-8") as file:
     STOP_WORDS = set([rasm(normalise(w)) for w in json.load(file)])
 
 
-def equal(textA, textB):
-    """ check if Arabic-scripted textA and textB should be considered the same.
-    TextB if fully vowelled, whereas textA can contain complete, partial or no vowels.
-
-    Args:
-        textA (str): first text to compare.
-        textB (str): second text to compare.
-
-    Return:
-        bool: True if both takes are considered the same, False otherwise.
-
-    """
-    textA_expanded = EXPANDED_REGEX.sub(fr'\1[{VOWELS}]*', textA)
-    return True if re.match(textA_expanded, textB) else False
+#def equal(textA, textB):
+#    """ check if Arabic-scripted normalised strings textA and textB should be considered the same.
+#    TextB if fully vowelled, whereas textA can contain complete, partial or no vowels.
+#
+#    Args:
+#        textA (str): first text to compare.
+#        textB (str): second text to compare.
+#
+#    Return:
+#        bool: True if both takes are considered the same, False otherwise.
+#
+#    """
+#    textA_expanded = EXPANDED_REGEX.sub(fr'\1[{VOWELS}]*', textA)
+#    return True if re.match(textA_expanded, textB) else False
 
 def too_common(toks, min_uncommon=1):
     """Check if sequence consists of too many common tokens.
@@ -273,12 +275,13 @@ def shorten(s, width=50, placeholder=' [...] '):
 
 
 if __name__ == '__main__':
-    fp = "../quran-tag/resources/quranAnalysis_frequent_phrases.tsv"
-    with open(fp, mode="r", encoding="utf-8") as file:
-        data = [x.split("\t")[0] for x in file.readlines()]
-        tok_data = [[rasm(normalise(tok)) for tok in t.split(" ")] for t in data[1:]]
-    for i, t in enumerate(tok_data):
-        print(too_common(t, 1), data[i+1])
+    #FIXME
+    #fp = "../quran-tag/resources/quranAnalysis_frequent_phrases.tsv"
+    #with open(fp, mode="r", encoding="utf-8") as file:
+    #    data = [x.split("\t")[0] for x in file.readlines()]
+    #    tok_data = [[rasm(normalise(tok)) for tok in t.split(" ")] for t in data[1:]]
+    #for i, t in enumerate(tok_data):
+    #    print(too_common(t, 1), data[i+1])
 
     parser = ArgumentParser(description='prepare tanzil quran for tagger')
     parser.add_argument('--prepare_quran', action='store_true', required=True, help='create the quran struct')

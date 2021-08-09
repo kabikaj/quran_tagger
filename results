@@ -1,0 +1,19 @@
+
+no processing of stopwords (code comented)
+altafsir_in_500 > altafsir_out_500
+  correct        = 2058
+  not found      = 3106
+  false positive = 999
+
+processing stopword
+altafsir_in_500_stopwords > altafsir_out_500_stopwords
+? no change ??
+  correct        = 2058
+  not found      = 3106
+  false positive = 999
+
+lower the minimum and processing stopwords
+altafsir_in_500_min3 > altafsir_out_500_min3
+  correct        = 2640
+  not found      = 2524
+  false positive = 3170
