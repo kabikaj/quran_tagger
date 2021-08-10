@@ -39,12 +39,14 @@ from pprint import pprint #DEBUG
 
 from util import normalise, rasm, too_common, check_ellipsis, shorten, last_token_of_sura_or_aya
 
-QURAN_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'quran.json')
+_MY_PATH = os.path.dirname(os.path.abspath(__file__))
+_QURAN_PATH = os.path.join(_MY_PATH, 'quran_simple.json')
+#_QURAN_UTHMANI = os.path.join(_MY_PATH, 'quran_uthmani.json')
 
 RED='\033[1;31m' #DEBUG
 RESET='\033[0m' #DEBUG
 
-with open(QURAN_PATH) as quranfp:
+with open(_QURAN_PATH) as quranfp:
     QURAN = json.load(quranfp)
 
 
@@ -287,7 +289,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
 
                     # last filtering:
                     
-                    if rasm_match or equal(text_norm, quran_norm):
+                    if rasm_match or text_norm == quran_norm:
                         qindex_ini = qstruct['qtext'][quran_ini][0]
                         qindex_end = qstruct['qtext'][quran_end][0]
                         quran_ids.append((qindex_ini, qindex_end, quran_ini, quran_end))
@@ -317,26 +319,26 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, rasm_match=False, debug=
 
 if __name__ == '__main__':
 
-##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم شكث شكتثش"              # no ellipsis
-##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى مستقيما شكث شكتثش"  # until 1 specified token
-    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إن الله بكل شكث شكتثش بسم كمسشتكي" # until 3 specified tokens
-##    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إخرها شكث شكتثش"    # until end of sura
-##    test = "نننننش كصصكككككك شسيبشسيبشسيبشسيبش كنتكنتكتكنتكمنت  كمنتكنمتكمنتكمنت"  # bogus text, no results
-    test = """فقال تعالى إن أول بيت وضع للناس للذي ببكة
-~~مباركا وهدى للعالمين فيه آيات بينات مقام إبراهيم ومن دخله كان آمنا 
-# وقال تعالى"""
-
-    words = re.split("[ \r\n~#]+", test)
-    print("words:")
-    for i, w in enumerate(words):
-        print(i, w, ">", normalise(w), ">", rasm(normalise(w)))
-##    for (ini, end), quran_ids in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=1):
-##        print(ini)
-##        for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
-##            print(">", qindex_ini)
-##    input("CONTINUE?")
-    results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=0)]
-    print(results)
+###    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم شكث شكتثش"              # no ellipsis
+###    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى مستقيما شكث شكتثش"  # until 1 specified token
+#    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إن الله بكل شكث شكتثش بسم كمسشتكي" # until 3 specified tokens
+###    test = "ضصث شس ضكصت هضقأيشب بسم الله الرحمن الرحيم إلى إخرها شكث شكتثش"    # until end of sura
+###    test = "نننننش كصصكككككك شسيبشسيبشسيبشسيبش كنتكنتكتكنتكمنت  كمنتكنمتكمنتكمنت"  # bogus text, no results
+#    test = """فقال تعالى إن أول بيت وضع للناس للذي ببكة
+#~~مباركا وهدى للعالمين فيه آيات بينات مقام إبراهيم ومن دخله كان آمنا 
+## وقال تعالى"""
+#
+#    words = re.split("[ \r\n~#]+", test)
+#    print("words:")
+#    for i, w in enumerate(words):
+#        print(i, w, ">", normalise(w), ">", rasm(normalise(w)))
+###    for (ini, end), quran_ids in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=1):
+###        print(ini)
+###        for qindex_ini, qindex_end, quran_ini, quran_end in quran_ids:
+###            print(">", qindex_ini)
+###    input("CONTINUE?")
+#    results = [m for m in tagger(words, debug=True, min_tokens=2, rasm_match=True, min_uncommon=0)]
+#    print(results)
 
     parser = ArgumentParser(description='tag text with Quranic quotations')
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='tokenised words to tag in json format')

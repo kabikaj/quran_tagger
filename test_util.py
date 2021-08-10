@@ -25,7 +25,7 @@ class TestNormalise(unittest.TestCase):
         self.assertEqual(normalise('بسُرعةِِ'), 'بسرعه')
 
     def test_norm_2(self):
-        self.assertEqual(normalise('فكّر'), 'فکر')
+        self.assertEqual(normalise('فكّر'), 'کر')
 
     def test_norm_3_nun(self):
         self.assertEqual(normalise('نُۨجِي'), 'ننجی')
@@ -34,13 +34,13 @@ class TestNormalise(unittest.TestCase):
         self.assertEqual(normalise('ٱلۡعَٰلَمِینَ'), 'لعلمین')
 
     def test_norm_5_conj(self):
-        self.assertEqual(normalise('والماء'), 'ولم')
+        self.assertEqual(normalise('والماء'), 'لم')
 
     def test_norm_6_conj(self):
-        self.assertEqual(normalise('فَالماء'), 'فلم')
+        self.assertEqual(normalise('فَالماء'), 'لم')
 
     def test_norm_7_conj(self):
-        self.assertEqual(normalise('فِي'), 'فی')
+        self.assertEqual(normalise('فِي'), 'ی')
 
 class TestRasm(unittest.TestCase):
 

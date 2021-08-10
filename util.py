@@ -7,18 +7,21 @@
 # requirements:
 #   * quran-uthmani.json
 #
-# usage:
-#   $ cat quran-uthmani.json | python util.py --prepare_quran > quran.json
+# examples:
+#   $ cat quran-simple.txt | python util.py --prepare_quran > quran_simple.json
+#   $ cat quran-uthmani.txt | python util.py --prepare_quran > quran_uthmani.json
 #
-##########################################################################
+#################################################################################
 
 import re
 import sys
-import ujson as json
-import json as old_json
-from argparse import ArgumentParser, FileType
 import textwrap
+from argparse import ArgumentParser, FileType
 
+try:
+    import ujson as json
+except ModuleNotFoundError:
+    import json
 
 NORM_MAPPING = {
     #'ࣱ' : 'ٌ',
@@ -103,7 +106,6 @@ CLEAN_REGEX = re.compile(f'[^{GRAPHEMES}]')
 RASM_REGEX = re.compile('|'.join(RASM_MAPPING))
 QNY_RASM_REGEX = re.compile('(%s)(?=$)' % '|'.join(QNY_RASM_MAPPING))
 
-#EXPANDED_REGEX = re.compile(fr'([^{VOWELS}])(?![{VOWELS}])')
 
 def normalise(s, rm_conj=True):
     """ normalise Arabic script.
@@ -119,7 +121,7 @@ def normalise(s, rm_conj=True):
     """
     s = NORM_REGEX.sub(lambda m: NORM_MAPPING[m.group(0)], s)
     s = CLEAN_REGEX.sub('', s)
-    if len(s)>1 and s[0]=='و' or s[0]=='ف':
+    if len(s)>1 and (s[0]=='و' or s[0]=='ف'):
         s = s[1:]
     return s.replace('ا', '')
 
@@ -142,21 +144,6 @@ with open("stopwords.json", mode="r", encoding="utf-8") as file:
     STOP_WORDS = set([rasm(normalise(w)) for w in json.load(file)])
 
 
-#def equal(textA, textB):
-#    """ check if Arabic-scripted normalised strings textA and textB should be considered the same.
-#    TextB if fully vowelled, whereas textA can contain complete, partial or no vowels.
-#
-#    Args:
-#        textA (str): first text to compare.
-#        textB (str): second text to compare.
-#
-#    Return:
-#        bool: True if both takes are considered the same, False otherwise.
-#
-#    """
-#    textA_expanded = EXPANDED_REGEX.sub(fr'\1[{VOWELS}]*', textA)
-#    return True if re.match(textA_expanded, textB) else False
-
 def too_common(toks, min_uncommon=1):
     """Check if sequence consists of too many common tokens.
 
@@ -171,11 +158,11 @@ def too_common(toks, min_uncommon=1):
     common = [t in STOP_WORDS for t in toks]
     return common.count(False) < min_uncommon
 
-def prepare_quran(pre_quran):
+def prepare_quran(quran):
     """ prepare preprocessed tanzil quran for the quran tagger.
 
     Args:
-        pre_quran (io.TextIOWrapper): pointer to preprocessed quran.
+        quran (io.TextIOWrapper): pointer to preprocessed quran.
 
     Return:
         dict: 2-element structure containing the quran:
@@ -186,18 +173,31 @@ def prepare_quran(pre_quran):
     """
     qrasm, qtext, i = {}, [], -1
 
-    for sura in pre_quran:
-        isura = int(sura['sura'])
-    
-        for vers in sura['verses']:
-            ivers = int(vers['verse'])
-    
-            for iword, word in enumerate(vers['full_text'].split(), 1):
-                word_norm = normalise(word)
-                word_rasm = rasm(word_norm)
+    entries = (li.split('|', 2) for li in filter(None, (l.strip() for l in quran)) if not li[0]=='#')
 
-                qtext.append(((isura, ivers, iword), (word, word_norm)))
-                qrasm[word_rasm] = qrasm.get(word_rasm, [])+[i:=i+1]
+    for sura, vers, text in entries:
+        isura = int(sura)
+        ivers = int(vers)
+
+        for iword, word in enumerate(text.split(), 1):
+            word_norm = normalise(word)
+            word_rasm = rasm(word_norm)
+
+            qtext.append(((isura, ivers, iword), (word, word_norm)))
+            qrasm[word_rasm] = qrasm.get(word_rasm, [])+[i:=i+1]
+
+    #for sura in quran:
+    #    isura = int(sura['sura'])
+    #
+    #    for vers in sura['verses']:
+    #        ivers = int(vers['verse'])
+    #
+    #        for iword, word in enumerate(vers['full_text'].split(), 1):
+    #            word_norm = normalise(word)
+    #            word_rasm = rasm(word_norm)
+    #
+    #            qtext.append(((isura, ivers, iword), (word, word_norm)))
+    #            qrasm[word_rasm] = qrasm.get(word_rasm, [])+[i:=i+1]
 
     return {'qrasm': qrasm, 'qtext': qtext}
 
@@ -287,4 +287,5 @@ if __name__ == '__main__':
     parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout, help='prepared tanzil quran')
     args = parser.parse_args()
 
-    json.dump(prepare_quran(json.load(args.infile)), args.outfile)
+    json.dump(prepare_quran(args.infile), args.outfile)
+
