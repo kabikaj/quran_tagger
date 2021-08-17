@@ -9,12 +9,15 @@
 #     do cp $f altafsir_in ; done
 #
 # examples:
-#   $ cat altafsir_in/tiny_example_altafsir.json |
-#     python test_quran_tagger_altafsir.py --min 3 --debug --gold altafsir_out/tiny_example_altafsir.gold.xml &> altafsir_out/tiny_example_altafsir.tagged.xml
-#   $ cat altafsir_in/altafsir-9-85-47-4-6.json |
-#     python test_quran_tagger_altafsir.py --min 3 --debug --gold altafsir_out/altafsir-9-85-47-4-6.gold.xml &> altafsir_out/altafsir-9-85-47-4-6.tagged.xml
+#   $ cat data/altafsir_in/tiny_example_altafsir.json |
+#     python test_quran_tagger_altafsir.py --min 3 --debug --gold data/altafsir_out/tiny_example_altafsir.gold.xml &> data/altafsir_out/tiny_example_altafsir.tagged.xml
+#   $ cat data/altafsir_in/altafsir-9-85-47-4-6.json |
+#     python test_quran_tagger_altafsir.py --min 3 --debug --gold data/altafsir_out/altafsir-9-85-47-4-6.gold.xml &> data/altafsir_out/altafsir-9-85-47-4-6.tagged.xml
+#   
+#   example with same length overlap:
+#   $ cat data/altafsir_in_500/altafsir-1-4-106-4-4.json | python test_quran_tagger_altafsir.py --min 3 --gold altafsir-1-4-106-4-4.gold.xml > altafsir-1-4-106-4-4.tagged.xml
 # 
-#############################################################################################################################################################
+##############################################################################################################################################################################
 
 import re
 import sys
@@ -31,7 +34,7 @@ if __name__ == '__main__':
     parser.add_argument('infile', nargs='?', type=FileType('r'), default=sys.stdin, help='altafsir file')
     parser.add_argument('outfile', nargs='?', type=FileType('w'), default=sys.stdout, help='tagged text according to quran tagger')
     parser.add_argument('--gold', type=FileType('w'), help='tagged text according to gold standard')
-    parser.add_argument('--min', type=int, default=MIN_TOKENS, help='minimum number of blocks to accept as a match (at least 2)')
+    parser.add_argument('--min', type=int, default=MIN_TOKENS, help='minimum number of words accepted as a match')
     parser.add_argument('--rasm', action='store_true', help='accept pure rasm matches')
     parser.add_argument('--quiet', action='store_true', help='do not indicate as attributes the quran indexes matched in the xml tag')
     parser.add_argument('--debug', action='store_true', help='show debugging info')
