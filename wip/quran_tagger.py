@@ -13,6 +13,10 @@
 # requirements:
 #   * depends on quran.json
 #
+# TODO
+# ----
+#   * preprocessing of uthmanic quran + testing
+#
 # performance tests:
 #   $ hyperfine "echo وَلَنَبْلُوَنَّكُمْ حَتَّىٰ نَعْلَمَ ٱلْمُجَاهِدِينَ مِنكُمْ | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python quran_tagger.py" --warmup 1
 #   $ echo وَلَنَبْلُوَنَّكُمْ حَتَّىٰ نَعْلَمَ ٱلْمُجَاهِدِينَ مِنكُمْ وَٱلصَّابِرِينَ وَنَبْلُوَ | tr ' ' '\n' | grep . | jq -R -n -c '[inputs]' | python -m cProfile quran_tagger.py --min 3
@@ -43,7 +47,6 @@ RESET='\033[0m' #DEBUG
 
 MIN_TOKENS = 4
 SAFE_LENGTH = 5
-RELATED_WINDOW = 80
 
 _MY_PATH = os.path.dirname(os.path.abspath(__file__))
 
@@ -150,36 +153,97 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, safe_length=SAFE_LENGTH,
 
     # filter out overlapping chains:
     if filtered_longest:
+        
         filtered_longest = sorted(filtered_longest.items(), key=lambda x: x[1])
         filtered_overlap = [filtered_longest[0]]
-        for end, group in filtered_longest[1:]:
+        
+        size = len(filtered_longest)
+        for i, (end, group) in enumerate(filtered_longest[1:], 1):
             ini = group[0][0]
             prev_end = filtered_overlap[-1][0]
             prev_ini = filtered_overlap[-1][1][0][0]
+            
             # there is overlap
             if not prev_end < ini:
+                
                 prev_size = prev_end - prev_ini
                 curr_size = end - ini
+                
                 if curr_size > prev_size:
                     filtered_overlap.pop()
                 elif curr_size < prev_size:
                     continue
+                
+                # same length overlaps
                 else:
-                    qini = group[0][1]
+                    curr_qini = group[0][1]
                     prev_qini = filtered_overlap[-1][1][0][1]
-                    #FIXME what to do if overlapping parts have same length? Currently nothing is done...
-                    print(f'WARNING! overlap Quran quotations with same length: {ini}(q{qini})-{end} vs '
+
+                    print(f'WARNING! overlap Quran quotations with same length: {ini}(q{curr_qini})-{end} vs '
                           f'{prev_ini}(q{prev_qini})-{prev_end}', file=sys.stderr) #TRACE
-                    #FIXME
-                    #if len(filtered_overlap)>1:
-                    #    prev_prev_qini = filtered_overlap[-2][1][0][1]
-                    #    print(f'>>>prev_prev_qini={prev_prev_qini}', file=sys.stderr)
-                    #    if (prev_qini - RELATED_WINDOW) < prev_prev_qini:
-                    #        print('A. es menor!!')
-                    #    elif (qini - RELATED_WINDOW) < prev_prev_qini:
-                    #        print('B. es menor!!')
-                    #    else:
-                    #        print('FUCK!!')
+
+                    #
+                    # start resolve same length overlap
+                    #
+
+                    pre2_qini, next_qini = None, None
+                    if len(filtered_overlap) > 2:
+                        pre2_qini = filtered_overlap[-2][1][0][1]
+                    if i < size-1:
+                        next_qini = filtered_longest[i+1][1][0][1]
+
+                    if not pre2_qini:
+                        if not next_qini:
+                            print('    skipped!!', file=sys.stderr) #TRACE #FIXME if there is no context, we skip the overlap!!
+                            filtered_overlap.pop()
+                            continue
+                        else:
+                            diff_next_prev = abs(next_qini - prev_qini)
+                            diff_next_curr = abs(next_qini - curr_qini)
+                            if diff_next_prev < diff_next_curr:
+                                continue
+                            else:
+                                filtered_overlap.pop()
+                                filtered_overlap.append((end, group))
+                    else:
+                        if not next_qini:
+                            diff_pre2_prev = abs(pre2_qini - prev_qini)
+                            diff_pre2_curr = abs(pre2_qini - curr_qini)
+                            if diff_pre2_prev < diff_pre2_curr:
+                                continue
+                            else:
+                                filtered_overlap.pop()
+                                filtered_overlap.append((end, group))
+                        else:
+                            diff_pre2_prev = abs(pre2_qini - prev_qini)
+                            diff_pre2_curr = abs(pre2_qini - curr_qini)
+                            diff_next_prev = abs(next_qini - prev_qini)
+                            diff_next_curr = abs(next_qini - curr_qini)
+
+                            if diff_pre2_prev < diff_pre2_curr:
+                                if diff_next_prev < diff_next_curr:
+                                    continue
+                                else:
+                                    if diff_pre2_prev < diff_next_curr:
+                                        continue
+                                    else:
+                                        filtered_overlap.pop()
+                                        filtered_overlap.append((end, group))
+                            else:
+                                if diff_next_prev < diff_next_curr:
+                                    if diff_pre2_curr < diff_next_prev:
+                                        filtered_overlap.pop()
+                                        filtered_overlap.append((end, group))
+                                    else:
+                                        continue
+                                else:
+                                    filtered_overlap.pop()
+                                    filtered_overlap.append((end, group))
+                    
+                    #
+                    # end resolve resolve same length overlap
+                    #
+
             filtered_overlap.append((end, group))
     else:
         filtered_overlap = []
@@ -194,7 +258,7 @@ def tagger(words, qstruct=QURAN, min_tokens=MIN_TOKENS, safe_length=SAFE_LENGTH,
             print(f'        ori =  "{text_ori}"  norm =  "{text_norm}"', file=sys.stderr) #TRACE
 
         quran_ids = []
-        for _, quran_ini in starts:
+        for _, quran_ini in sorted(starts, key=lambda x: x[1]):
 
             quran_end = quran_ini + (text_end - text_ini)
 
