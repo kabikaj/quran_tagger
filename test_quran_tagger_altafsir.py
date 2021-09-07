@@ -36,6 +36,8 @@
 #
 # ejemplo bueno para overlap!! يُؤْمِنُ (2, 264, 16) | (65, 2, 21) // y es mejor que el gold standard // no pilla وَٱلْعَاقِبَةُ لِلتَّقْوَىٰ, hay q ver si habria que annadirlo // tiene sentido que salga esto? <quran ini=2:177:6 end=2:177:8> قبل المشرق والمغرب،
 #   cat data/altafsir_in_500/altafsir-2-24-2-177-177.json | python test_quran_tagger_altafsir.py --min 3 --gold altafsir-2-24-2-177-177.gold.xml > altafsir-2-24-2-177-177.tagged.xml
+#   example with same length overlap:
+#   $ cat data/altafsir_in_500/altafsir-1-4-106-4-4.json | python test_quran_tagger_altafsir.py --min 3 --gold altafsir-1-4-106-4-4.gold.xml > altafsir-1-4-106-4-4.tagged.xml
 # 
 ##############################################################################################################################################################################
 
