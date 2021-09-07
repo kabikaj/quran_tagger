@@ -1,19 +1,179 @@
 
-no processing of stopwords (code comented)
-altafsir_in_500 > altafsir_out_500
-  correct        = 2058
-  not found      = 3106
-  false positive = 999
+files 500; min 2 # many oevrlaps with same length !!
+  correct        = 3977
+  not found      = 1187
+  false positive = 27617
 
-processing stopword
-altafsir_in_500_stopwords > altafsir_out_500_stopwords
-? no change ??
-  correct        = 2058
-  not found      = 3106
-  false positive = 999
+files 500; min 3
+  correct        = 3126
+  not found      = 2038
+  false positive = 3001
 
-lower the minimum and processing stopwords
-altafsir_in_500_min3 > altafsir_out_500_min3
-  correct        = 2640
-  not found      = 2524
-  false positive = 3170
+files 500; min 4
+  correct        = 2301
+  not found      = 2863
+  false positive = 854
+
+---------------------------------
+
+files 500; min 2; filtered rasm_stopwords at beginning
+  correct        = 1985
+  not found      = 3179
+  false positive = 828
+
+files 500; min 3; filtered rasm_stopwords at beginning
+  correct        = 893
+  not found      = 4271
+  false positive = 178
+
+files 500; min 4; filtered rasm_stopwords at beginning
+  correct        = 423
+  not found      = 4741
+  false positive = 79
+
+---------------------------------
+
+files 500; min 2; filtered rasm_stopwords FROM LEEDS at beginning
+  correct        = 3241
+  not found      = 1923
+  false positive = 5913
+
+files 500; min 3; filtered rasm_stopwords FROM LEEDS at beginning
+  correct        = 2055
+  not found      = 3109
+  false positive = 709
+
+files 500; min 4; filtered rasm_stopwords FROM LEEDS at beginning
+  correct        = 1207
+  not found      = 3957
+  false positive = 280
+
+---------------------------------
+
+files 500; min 2; filtered rasm_stopwords FROM LEEDS at beginning ; gold_min 2
+  correct        = 3241
+  not found      = 1010
+  false positive = 5913
+
+files 500; min 3; filtered rasm_stopwords FROM LEEDS at beginning ; gold_min 3
+  correct        = 2055
+  not found      = 1314
+  false positive = 707
+
+files 500; min 4; filtered rasm_stopwords FROM LEEDS at beginning ; gold 4
+  correct        = 1207
+  not found      = 1297
+  false positive = 279
+
+---------------------------------
+
+files 500; min 2; filtered rasm_stopwords FROM LEEDS at beginning ; gold_min 2 ; safe length in tagger && preprocess matches in evaluator
+  correct        = 3254
+  not found      = 997
+  false positive = 5916
+
+files 500; min 3; filtered rasm_stopwords FROM LEEDS at beginning ; gold_min 3 ; safe length in tagger && preprocess matches in evaluator
+  correct        = 2175
+  not found      = 1192
+  false positive = 761
+
+files 500; min 4; filtered rasm_stopwords FROM LEEDS at beginning ; gold_min 4 ; safe length in tagger && preprocess matches in evaluator
+  correct        = 1685
+  not found      = 816
+  false positive = 446
+
+---------------------------------
+
+files 500; min 2; filtered rasm_stopwords.1 at beginning ; gold_min 2 ; safe length in tagger && preprocess matches in evaluator
+  correct        = 2383
+  not found      = 1868
+  false positive = 977
+
+files 500; min 3; filtered rasm_stopwords.1 at beginning ; gold_min 3 ; safe length in tagger && preprocess matches in evaluator
+  correct        = 1730
+  not found      = 1637
+  false positive = 441
+
+files 500; min 4; filtered rasm_stopwords.1 at beginning ; gold_min 4 ; safe length in tagger && preprocess matches in evaluator
+  correct        = 1616
+  not found      = 885
+  false positive = 400
+
+---------------------------------
+
+new version ; files 500 ; min 2
+  correct        = 3254
+  not found      = 997
+  false positive = 6005
+
+#new version ; files 500 ; min 3
+#  correct        = 2175
+#  not found      = 1192
+#  false positive = 764
+
+new version ; files 500 ; min 4
+  correct        = 1685
+  not found      = 816
+  false positive = 448
+
+---------------------------------
+
+new version ; files 500 ; min 3 ; no print same lenth overlaps
+
+correct        = 2175
+not found      = 1192
+false positive = 750
+
+new version ; files 500 ; min 4 ; no print same lenth overlaps
+correct        = 1685
+not found      = 816
+false positive = 443
+
+---------------------------------
+
+new version ; files 500 ; min 4 ; with overlaps resolution
+correct        = 1685
+not found      = 816
+false positive = 445
+
+---------------------------------
+
+after ellipsis implementation but without ellipsis processing ; files 500 ; min 4
+correct        = 1685
+not found      = 816
+false positive = 445
+
+---------------------------------
+
+after ellipsis implementation WITH ellipsis processing ; files 500 ; min 4
+correct        = 1673
+not found      = 828
+false positive = 461
+
+
+
+
+
+
+alicia@vostok:~/Dropbox/abjad/quran_tagger$ time for f in $(find data/altafsir_in -type f) ; do cat $f | python test_quran_tagger_altafsir.py --quiet --gold "data/altafsir_out/$(basename $f .json).gold.xml" > "data/altafsir_out/$(basename $f .json).tagged.xml" ; done
+WARNING! overlap Quran quotations with same length: 761(q32031)-765 vs 759(q35653)-763
+WARNING! overlap Quran quotations with same length: 67(q50380)-71 vs 66(q38862)-70
+WARNING! overlap Quran quotations with same length: 13(q60281)-18 vs 12(q51266)-17
+WARNING! overlap Quran quotations with same length: 101(q10580)-105 vs 97(q28703)-101
+    skipped!!
+WARNING! overlap Quran quotations with same length: 483(q50380)-487 vs 482(q38862)-486
+WARNING! overlap Quran quotations with same length: 330(q44961)-334 vs 329(q57824)-333
+WARNING! overlap Quran quotations with same length: 193(q25914)-198 vs 191(q63090)-196
+WARNING! overlap Quran quotations with same length: 94(q49852)-98 vs 91(q40311)-95
+WARNING! overlap Quran quotations with same length: 6(q5210)-13 vs 5(q63499)-12
+    skipped!!
+WARNING! overlap Quran quotations with same length: 678(q59561)-682 vs 677(q71278)-681
+
+real    24m23,493s
+user    20m35,169s
+sys 1m49,858s
+alicia@vostok:~/Dropbox/abjad/quran_tagger$ python evaluate_altafsir.py data/altafsir_out --min 4
+correct        = 5360
+not found      = 2668
+false positive = 1342
+
